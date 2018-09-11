@@ -1,0 +1,28 @@
+<resources>
+
+    <!-- Base application theme. -->
+    <style name="AppTheme" parent="Theme.AppCompat.Light.DarkActionBar">
+        <!-- Customize your theme here. -->
+        <item name="colorPrimary">@color/colorPrimary</item>
+        <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
+        <item name="colorAccent">@color/colorAccent</item>
+    </style>
+
+    <style name="ActionSheetStyle">
+        <item name="actionSheetBackground">@android:color/transparent</item>
+
+        <item name="cancelButtonTextColor">#1E82FF</item>
+        <item name="otherButtonTextColor">#1E82FF</item>
+        <item name="actionSheetPadding">10dp</item>
+        <item name="otherButtonSpacing">2dp</item>
+        <item name="cancelButtonMarginTop">10dp</item>
+        <item name="cancelButtonBackground">@drawable/button_rounded_corner_drawable</item>
+        <item name="otherButtonTopBackground">@drawable/button_rounded_corner_drawable</item>
+        <item name="otherButtonMiddleBackground">@drawable/button_rounded_corner_drawable</item>
+        <item name="otherButtonBottomBackground">@drawable/button_rounded_corner_drawable</item>
+        <item name="otherButtonSingleBackground">@drawable/button_rounded_corner_drawable</item>
+        <item name="actionSheetTextSize">16sp</item>
+    </style>
+
+
+</resources>

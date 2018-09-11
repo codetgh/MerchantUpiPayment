@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@android:color/transparent"
+    android:id="@+id/mainLayout">
+
+    <GridView
+        android:id="@+id/chooserGv"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight=".9"
+
+        android:horizontalSpacing="2dp"
+        android:numColumns="3"
+        android:padding="1dp"
+        android:splitMotionEvents="false"
+        android:stretchMode="columnWidth"
+        android:verticalSpacing="2dp"
+        android:visibility="gone" /><!--android:background="@android:color/transparent"-->
+
+    <TextView
+        android:id="@+id/noDataTextView"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight=".9"
+        android:visibility="visible" />
+
+    <Button
+        android:id="@+id/cancel"
+        android:layout_width="match_parent"
+        android:layout_height="21dp"
+        android:layout_weight=".1"
+        android:text="Cancel"
+        android:background="#FFF"
+        android:textSize="18sp"
+        android:textColor="@color/colorPrimary"/>
+
+
+
+</LinearLayout>
