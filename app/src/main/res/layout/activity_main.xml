@@ -3,8 +3,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-
-    android:gravity="center">
+    android:layout_marginTop="20dp">
 
     <EditText
         android:id="@+id/merchantVpa"
@@ -45,6 +44,24 @@
         android:layout_margin="20dp"
         android:background="@color/colorPrimary"
         android:text="UPI Pay"
+        android:textColor="#fff"/>
+
+    <Button
+        android:id="@+id/scanUpi"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="20dp"
+        android:background="@color/colorPrimary"
+        android:text="Scan"
+        android:textColor="#fff"/>
+
+    <Button
+        android:id="@+id/createQRCode"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="20dp"
+        android:background="@color/colorPrimary"
+        android:text="Create QR Code"
         android:textColor="#fff"/>
 
 </LinearLayout>

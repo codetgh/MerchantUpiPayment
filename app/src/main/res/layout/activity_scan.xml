@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <com.journeyapps.barcodescanner.DecoratedBarcodeView
+        android:id="@+id/zxing_barcode_scanner"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:zxing_scanner_layout="@layout/custom_barcode_scanner"
+        >
+    </com.journeyapps.barcodescanner.DecoratedBarcodeView>
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="right"
+        android:orientation="horizontal">
+
+    <ImageButton
+        android:id="@+id/switch_flashlight"
+        android:layout_width="38dp"
+        android:layout_height="38dp"
+        android:gravity="right"
+        android:scaleType="fitCenter"
+        android:layout_margin="10dp"
+        android:background="@android:color/transparent"
+        android:src="@drawable/ic_flash_off"
+        android:layout_alignParentTop="true"
+        android:layout_centerHorizontal="true"
+        android:onClick="switchFlashlight"/>
+    </LinearLayout>
+    <TextView
+        android:layout_marginTop="100dp"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:id="@+id/branchInfo"
+        android:text="Current Branch"
+        android:fontFamily="sans-serif"
+        android:gravity="center_horizontal"
+        android:textColor="#fff"
+        android:paddingLeft="20dp"
+        android:textStyle="bold"
+        android:textSize="16sp"
+        />
+</RelativeLayout>

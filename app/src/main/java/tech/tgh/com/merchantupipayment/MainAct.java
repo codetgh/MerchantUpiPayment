@@ -2,8 +2,10 @@ package tech.tgh.com.merchantupipayment;
 
 import android.app.Activity;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.ResolveInfo;
+import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
@@ -11,17 +13,30 @@ import android.net.Uri;
 import android.os.Handler;
 import android.os.Parcelable;
 import android.support.design.widget.BottomSheetDialog;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.text.TextUtils;
 import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.GridView;
+import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.google.zxing.BarcodeFormat;
+import com.google.zxing.MultiFormatWriter;
+import com.google.zxing.WriterException;
+import com.google.zxing.common.BitMatrix;
+import com.google.zxing.integration.android.IntentIntegrator;
+import com.google.zxing.integration.android.IntentResult;
+import com.google.zxing.qrcode.encoder.QRCode;
+
+import java.io.File;
+import java.io.FileOutputStream;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -39,6 +54,9 @@ import tech.tgh.com.merchantupipayment.utils.CheckNetworkConnection;
 import tech.tgh.com.merchantupipayment.utils.CommonUtil;
 import tech.tgh.com.merchantupipayment.utils.Constants;
 
+import static android.graphics.Color.BLACK;
+import static android.graphics.Color.WHITE;
+
 public class MainAct extends AppCompatActivity implements ActionSheet.MenuItemClickListener{
 
     private static final String TAG = "MainAct";
@@ -51,10 +69,12 @@ public class MainAct extends AppCompatActivity implements ActionSheet.MenuItemCl
     private EditText mEtMerchantName;
     private EditText mEtOrderAmt;
     private EditText mEtRemark;
-
+    private Button mBtUpiPay;
+    private Button mScanPay;
+    Button mBtCreateQRCode;
     private String appName;
     private ActionSheet actionSheet;
-
+    String upiStrWithData = "";
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -64,57 +84,85 @@ public class MainAct extends AppCompatActivity implements ActionSheet.MenuItemCl
         mEtMerchantVpa = findViewById(R.id.merchantVpa);
         mEtOrderAmt = findViewById(R.id.orderAmt);
         mEtRemark = findViewById(R.id.remark);
-        Button mBtUpiPay = findViewById(R.id.upiPay);
-
-        mBtUpiPay.setBackgroundDrawable(CommonUtil.setRoundedCorner(getResources().getColor(R.color.colorPrimary),
-                getResources().getColor(R.color.colorPrimary),15, GradientDrawable.RECTANGLE));
-        mBtUpiPay.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-
-                //Encode data
-                String merchantName = Uri.encode(mEtMerchantName.getText().toString());
-
-                String merchantVpa = mEtMerchantVpa.getText().toString();
-                DecimalFormat form = new DecimalFormat("0.00");
-                String orderAmt = form.format(Double.parseDouble(mEtOrderAmt.getText().toString()));
-                String remark = Uri.encode(mEtRemark.getText().toString());
-
-                /**
-                 * here we create upi url string which listen by our available UPI app. All these data auto fill the
-                 * UPI app respective editText and user can't change them.
-                 * cu = currency which is default INR
-                 * */
-
-                String upiStrWithData = "upi://pay?pa=" + merchantVpa + "&pn=" + merchantName + "&am=" + orderAmt + "&cu=INR&tn=" + remark;
-
-                payWithUpi(upiStrWithData);
-
-            }
-        });
+        mBtUpiPay = findViewById(R.id.upiPay);
+        mScanPay = findViewById(R.id.scanUpi);
+        mBtCreateQRCode = findViewById(R.id.createQRCode);
+        buttonClickEvent();
     }
 
-    private void payWithUpi(String upiStr) {
-        Intent intent = new Intent();
-        intent.setData(Uri.parse(upiStr));
-        String[] desireApp = new String[]{"net.one97.paytm", "com.freecharge.android",
-                "com.google.android.apps.nbu.paisa.user"};
+    private void buttonClickEvent() {
+        mBtUpiPay.setBackgroundDrawable(CommonUtil.setRoundedCorner(getResources().getColor(R.color.colorPrimary),
+                getResources().getColor(R.color.colorPrimary),15, GradientDrawable.RECTANGLE));
+        mScanPay.setBackgroundDrawable(CommonUtil.setRoundedCorner(getResources().getColor(R.color.colorPrimary),
+                getResources().getColor(R.color.colorPrimary),15, GradientDrawable.RECTANGLE));
 
-        //Intent chooser = Intent.createChooser(intent,"Pay with..");
-        //Intent custumChooser = generateCustomChooserIntent(intent,new String[]{"com.myairtelapp","com.phonepe.app",
-        // "in.org.npci.upiapp","com.whatsapp"});
-        /*Intent customChooser = generateCustomChooserIntentWithFixApp(intent, new String[]{"net.one97.paytm", "com.freecharge.android",
-                "com.google.android.apps.nbu.paisa.user"});
-        startActivityForResult(customChooser, PAY_REQ_CODE);*/
+        mBtCreateQRCode.setBackgroundDrawable(CommonUtil.setRoundedCorner(getResources().getColor(R.color.colorPrimary),
+                getResources().getColor(R.color.colorPrimary),15, GradientDrawable.RECTANGLE));
+        mBtUpiPay.setOnClickListener(new ClickOperation());
+        mScanPay.setOnClickListener(new ClickOperation());
+        mBtCreateQRCode.setOnClickListener(new ClickOperation());
+    }
 
-        //with normal layout
-        /*bottomDialogAsChooserCustom(intent, new String[]{"net.one97.paytm", "com.freecharge.android",
-                "com.google.android.apps.nbu.paisa.user"});*/
+    @Override
+    public void onItemClick(int itemPosition) {
+        Toast.makeText(MainAct.this,"Item "+itemPosition+" Clicked",Toast.LENGTH_SHORT).show();
+    }
 
-        //custom chooser in android material layout
-        setTheme(R.style.ActionSheetStyle);
-        showActionSheet(intent,desireApp);
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
 
+        switch (requestCode) {
+            case PAY_REQ_CODE:
+                if (RESULT_OK == resultCode) {
+                    if (data != null) {
+                        String trxt = data.getStringExtra("response");
+                        Log.d(TAG, "onActivityResult: " + trxt);
+                        ArrayList<String> dataList = new ArrayList<>();
+                        dataList.add(trxt);
+                        upiPaymentDataOperation(dataList);
+                    } else {
+                        Log.d(TAG, "onActivityResult: " + "Return data is null");
+                        ArrayList<String> dataList = new ArrayList<>();
+                        dataList.add("nothing");
+                        upiPaymentDataOperation(dataList);
+                    }
+
+                } else if (resultCode == 11) {
+                    if (data != null) {
+                        String trxt = data.getStringExtra("response");
+                        Log.d(TAG, "onActivityResult: " + trxt);
+
+                        ArrayList<String> dataList = new ArrayList<>();
+                        dataList.add(trxt);
+                        upiPaymentDataOperation(dataList);
+                    } else {
+                        Log.d(TAG, "onActivityResult: " + "Return data is null"); //when user simply back without payment
+                        ArrayList<String> dataList = new ArrayList<>();
+                        dataList.add("nothing");
+                        upiPaymentDataOperation(dataList);
+                    }
+                } else {
+                    Log.d(TAG, "onActivityResult: " + "Return data is null"); //when user simply back without payment
+                    ArrayList<String> dataList = new ArrayList<>();
+                    dataList.add("nothing");
+                    upiPaymentDataOperation(dataList);
+                }
+                break;
+
+                default:
+            IntentResult result = IntentIntegrator.parseActivityResult(requestCode, resultCode, data);
+            if(result != null) {
+                if(result.getContents() == null) {
+                    Toast.makeText(this, "QR Code scan Cancelled", Toast.LENGTH_LONG).show();
+
+                } else {
+                    Log.d(TAG, "onActivityResult: "+result.getContents());
+                    String qrCode = result.getContents();
+                    payWithUpi(qrCode); //FROM QR CODE SCAN
+                }
+            }
+        }
     }
 
     public void showActionSheet(Intent intent,String[] desireApp ) {
@@ -134,6 +182,181 @@ public class MainAct extends AppCompatActivity implements ActionSheet.MenuItemCl
         actionSheet.showMenu();
     }
 
+
+    private void callToScanActivity() {
+        IntentIntegrator intentIntegrator = new IntentIntegrator((Activity) context);
+        intentIntegrator.setCaptureActivity(ScanActivity.class);
+        intentIntegrator.setOrientationLocked(false);
+        //  intentIntegrator.setScanningRectangle(450, 450);
+        //  intentIntegrator.getCaptureActivity();
+        intentIntegrator.initiateScan();
+    }
+
+    private Bitmap createBarcodeBitmap(String data, int width, int height) throws WriterException {
+        MultiFormatWriter writer = new MultiFormatWriter();
+        // String finalData = Uri.encode(data);
+
+        // Use 1 as the height of the matrix as this is a 1D Barcode.
+        BitMatrix bm = writer.encode(data, BarcodeFormat.CODE_128, width, 1); //for barcode
+        int bmWidth = bm.getWidth();
+
+        Bitmap imageBitmap = Bitmap.createBitmap(bmWidth, height, Bitmap.Config.ARGB_8888);
+
+        for (int i = 0; i < bmWidth; i++) {
+            // Paint columns of width 1
+            int[] column = new int[height];
+            Arrays.fill(column, bm.get(i, 0) ? BLACK : WHITE);
+            imageBitmap.setPixels(column, 0, 1, i, 0, 1, height);
+        }
+
+        return imageBitmap;
+    }
+
+    private Bitmap createQRCodeBitmap(String str,int width) throws WriterException {
+        BitMatrix result;
+        try {
+            result = new MultiFormatWriter().encode(str,
+                    BarcodeFormat.QR_CODE, width, width, null);
+        } catch (IllegalArgumentException iae) {
+            return null;
+        }
+        int w = result.getWidth();
+        int h = result.getHeight();
+        int[] pixels = new int[w * h];
+        for (int y = 0; y < h; y++) {
+            int offset = y * w;
+            for (int x = 0; x < w; x++) {
+                pixels[offset + x] = result.get(x, y) ? BLACK : WHITE;
+            }
+        }
+        Bitmap bitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
+        bitmap.setPixels(pixels, 0, width, 0, 0, w, h);
+        return bitmap;
+    }
+
+    private void createDialog(final Bitmap bitmap){
+        ImageView imageView = new ImageView(context);
+        imageView.setImageBitmap(bitmap);
+        AlertDialog.Builder builder = new AlertDialog.Builder(context).setMessage("QR Code").setCancelable(false)
+                .setView(imageView).setPositiveButton("Share", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialogInterface, int i) {
+                        shareQRCode(bitmap);
+                        dialogInterface.dismiss();
+                    }
+                }).setNegativeButton("Save", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialogInterface, int i) {
+                        saveQRCode();
+                        dialogInterface.dismiss();
+                    }
+                });
+        AlertDialog dialog = builder.create();
+        dialog.show();
+    }
+
+    private void saveQRCode() {
+        Log.d(TAG, "saveQRCode: "+"not now");
+    }
+
+    private void shareQRCode(Bitmap bitmap) {
+        try {
+            File file = new File(this.getExternalCacheDir(),"mupShareQRCode.png");
+            FileOutputStream fOut = new FileOutputStream(file);
+            bitmap.compress(Bitmap.CompressFormat.PNG, 100, fOut);
+            fOut.flush();
+            fOut.close();
+            //file.setReadable(true, true);
+            final Intent intent = new Intent(android.content.Intent.ACTION_SEND);
+            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            intent.putExtra(Intent.EXTRA_STREAM, Uri.fromFile(file));
+            intent.setType("image/png");
+            startActivity(Intent.createChooser(intent, "Share QRCode using"));
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void upiPay(boolean isQRCode) { //true for qr code, false for upi payment
+        //Encode data
+        String merchantName = Uri.encode(mEtMerchantName.getText().toString());
+
+        String merchantVpa = mEtMerchantVpa.getText().toString();
+
+        String remark = Uri.encode(mEtRemark.getText().toString());
+        DecimalFormat form = new DecimalFormat("0.00");
+
+        String orderAmt = mEtOrderAmt.getText().toString();
+        if(!TextUtils.isEmpty(orderAmt)) {
+            orderAmt = form.format(Double.parseDouble(orderAmt));
+        }
+
+
+        /**
+         * here we create upi url string which listen by our available UPI app. All these data auto fill the
+         * UPI app respective editText and user can't change them.
+         * cu = currency which is default INR
+         * tid = pass from app which will return from psp as txtRef no. used for verification of an order
+         * */
+        boolean validationPassOrNot = false;
+        View focusView = null;
+        if(TextUtils.isEmpty(merchantVpa)){
+            validationPassOrNot = true;
+            focusView = mEtMerchantVpa;
+            mEtMerchantVpa.setError("Can't empty.");
+        }else if(TextUtils.isEmpty(merchantName)){
+            validationPassOrNot = true;
+            focusView = mEtMerchantName;
+            mEtMerchantName.setError("Can't empty.");
+        }else if(TextUtils.isEmpty(orderAmt)) {
+            validationPassOrNot = true;
+            focusView = mEtOrderAmt;
+            mEtOrderAmt.setError("Can't empty.");
+        }
+
+        if(validationPassOrNot) {
+            focusView.requestFocus();
+        }else{
+            upiStrWithData = "upi://pay?pa=" + merchantVpa + "&pn=" + merchantName + "&am=" + orderAmt + "&cu=INR&tn=" + remark;
+
+            if(isQRCode){
+                if(!TextUtils.isEmpty(upiStrWithData)) {
+                    try {
+                        Bitmap bitmap = createQRCodeBitmap(upiStrWithData,380);
+                        if(bitmap != null) createDialog(bitmap);
+                    } catch (WriterException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }else {
+                payWithUpi(upiStrWithData);
+            }
+        }
+    }
+
+    private void payWithUpi(String upiStr) {
+        Intent intent = new Intent();
+        Uri apiUri = Uri.parse(upiStr);
+        intent.setData(apiUri);
+        String[] desireApp = new String[]{"net.one97.paytm", "com.freecharge.android",
+                "com.google.android.apps.nbu.paisa.user"};
+
+        //Intent chooser = Intent.createChooser(intent,"Pay with..");
+        //Intent custumChooser = generateCustomChooserIntent(intent,new String[]{"com.myairtelapp","com.phonepe.app",
+        // "in.org.npci.upiapp","com.whatsapp"});
+        /*Intent customChooser = generateCustomChooserIntentWithFixApp(intent, new String[]{"net.one97.paytm", "com.freecharge.android",
+                "com.google.android.apps.nbu.paisa.user"});
+        startActivityForResult(customChooser, PAY_REQ_CODE);*/
+
+        //with normal layout
+        /*bottomDialogAsChooserCustom(intent, new String[]{"net.one97.paytm", "com.freecharge.android",
+                "com.google.android.apps.nbu.paisa.user"});*/
+
+        //custom chooser in android material layout
+        setTheme(R.style.ActionSheetStyle);
+        showActionSheet(intent,desireApp);
+
+    }
 
     private View bottomDialogAsChooserCustom(final Intent prototype, String[] desiredApp) {
         String noAppMsg = "";
@@ -199,7 +422,7 @@ public class MainAct extends AppCompatActivity implements ActionSheet.MenuItemCl
 
         cancelDialog.setVisibility(View.GONE);
 
-        mainLayoutInGridView.setBackgroundDrawable(CommonUtil.setRoundedCorner(Color.WHITE,Color.WHITE,10,
+        mainLayoutInGridView.setBackgroundDrawable(CommonUtil.setRoundedCorner(WHITE, WHITE,10,
                 GradientDrawable.RECTANGLE));
 
         if(!evalInstalledAppInfoArrayList.isEmpty())
@@ -273,54 +496,6 @@ public class MainAct extends AppCompatActivity implements ActionSheet.MenuItemCl
 
     }
 
-    @Override
-    public void onItemClick(int itemPosition) {
-        Toast.makeText(MainAct.this,"Item "+itemPosition+" Clicked",Toast.LENGTH_SHORT).show();
-    }
-
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-
-        switch (requestCode) {
-            case PAY_REQ_CODE:
-                if (RESULT_OK == resultCode) {
-                    if (data != null) {
-                        String trxt = data.getStringExtra("response");
-                        Log.d(TAG, "onActivityResult: " + trxt);
-                        ArrayList<String> dataList = new ArrayList<>();
-                        dataList.add(trxt);
-                        upiPaymentDataOperation(dataList);
-                    } else {
-                        Log.d(TAG, "onActivityResult: " + "Return data is null");
-                        ArrayList<String> dataList = new ArrayList<>();
-                        dataList.add("nothing");
-                        upiPaymentDataOperation(dataList);
-                    }
-
-                } else if (resultCode == 11) {
-                    if (data != null) {
-                        String trxt = data.getStringExtra("response");
-                        Log.d(TAG, "onActivityResult: " + trxt);
-
-                        ArrayList<String> dataList = new ArrayList<>();
-                        dataList.add(trxt);
-                        upiPaymentDataOperation(dataList);
-                    } else {
-                        Log.d(TAG, "onActivityResult: " + "Return data is null"); //when user simply back without payment
-                        ArrayList<String> dataList = new ArrayList<>();
-                        dataList.add("nothing");
-                        upiPaymentDataOperation(dataList);
-                    }
-                } else {
-                    Log.d(TAG, "onActivityResult: " + "Return data is null"); //when user simply back without payment
-                    ArrayList<String> dataList = new ArrayList<>();
-                    dataList.add("nothing");
-                    upiPaymentDataOperation(dataList);
-                }
-                break;
-        }
-    }
 
     private void upiPaymentDataOperation(ArrayList<String> data) {
         if (CheckNetworkConnection.isConnectionAvailable(context)) {
@@ -362,8 +537,33 @@ public class MainAct extends AppCompatActivity implements ActionSheet.MenuItemCl
         }
     }
 
-    //no us.just for understanding
+    //interface and classes
 
+    class ClickOperation implements View.OnClickListener {
+
+        @Override
+        public void onClick(View view) {
+            int id = view.getId();
+
+            switch (id){
+                case R.id.scanUpi:
+                    callToScanActivity();
+                    break;
+
+                case R.id.upiPay:
+                    upiPay(false);
+                    break;
+
+                case R.id.createQRCode:
+
+                    upiPay(true);
+                    break;
+            }
+        }
+    }
+
+
+    //no us.just for understanding
     //default intent chooser
     private Intent generateCustomChooserIntentWithFixApp(Intent prototype, String[] desiredApp) {
         List<Intent> targetedShareIntents = new ArrayList<>();
