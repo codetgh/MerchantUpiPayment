@@ -6,7 +6,6 @@ For using UPI, There is no need to use payment gateway.Although gateway provide 
 # Add read and create QR code of UPI.
 coming soon.. request payment by sharing link
 
-<img src="https://drive.google.com/uc?export=view&id=1yXZM7_tVFwS89IpbYxGvq-9H66LqtfDY" style="width: 100px; height: 200px" title="Click for the larger version." />
 pic(1) https://drive.google.com/file/d/1yXZM7_tVFwS89IpbYxGvq-9H66LqtfDY/view?usp=sharing
 
 pic(2) click on button upi pay
@@ -15,5 +14,5 @@ https://drive.google.com/file/d/1K6LvEnmj2dPOIShnkhVt6WsfbjtfHeaA/view?usp=shari
 pic(3) QR code in dialog box and share option
 https://drive.google.com/file/d/1uVpOSLzybMVr3mfQLd07mGsHn3-PC3pz/view?usp=sharing
 
-you can read full document here
+you can read full NPCI UPI intent sharing document here
 https://drive.google.com/file/d/15h_Mom1Y7abJJIibUuC2Qjl1gh5LE97U/view?usp=sharing
